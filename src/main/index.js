@@ -28,9 +28,9 @@ import { registerBackupHandlers } from "./ipc_backups";
 import {
   addUsbEventListeners,
   registerDeviceDiscoveryHandlers,
-  removeUsbEventListeners,
 } from "./ipc_device_discovery";
 import { registerDevtoolsHandlers } from "./ipc_devtools";
+import { registerExitHandlers } from "./ipc_exit";
 import { registerFileIoHandlers } from "./ipc_file_io";
 import { registerLoggingHandlers } from "./ipc_logging";
 import { registerNativeThemeHandlers } from "./ipc_nativetheme";
@@ -124,9 +124,6 @@ async function createMainWindow() {
 
   return window;
 }
-ipcMain.on("app-exit", (event, arg) => {
-  app.quit();
-});
 
 // This is a workaround for the lack of context-awareness in two native modules
 // we use, serialport (serialport/node-serialport#2051) and usb
@@ -149,16 +146,6 @@ if (isDevelopment && process.env.ELECTRON_WEBPACK_APP_DEBUG_PORT) {
   ); /* 1 */
   app.commandLine.appendSwitch("userDataDir", true); /* 2 */
 }
-
-// quit application when all windows are closed
-app.on("window-all-closed", () => {
-  removeUsbEventListeners();
-
-  // on macOS it is common for applications to stay open until the user explicitly quits
-  if (process.platform !== "darwin") {
-    app.quit();
-  }
-});
 
 app.on("activate", () => {
   // on macOS it is common to re-create a window even after all windows have been closed
@@ -189,9 +176,6 @@ app.on("web-contents-created", (_, wc) => {
       if (input.code == "KeyR") {
         wc.reload();
       }
-      if (input.code == "KeyQ") {
-        app.quit();
-      }
     }
   });
 });
@@ -203,6 +187,7 @@ process.on("uncaughtException", function (error) {
 registerBackupHandlers();
 registerDeviceDiscoveryHandlers();
 registerDevtoolsHandlers();
+registerExitHandlers();
 registerFileIoHandlers();
 registerLoggingHandlers();
 registerNativeThemeHandlers();

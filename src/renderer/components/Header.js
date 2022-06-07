@@ -24,6 +24,7 @@ import IconButton from "@mui/material/IconButton";
 import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
 import ConfirmationDialog from "@renderer/components/ConfirmationDialog";
+import { ipcRenderer } from "electron";
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import "typeface-roboto/index.css";
@@ -38,8 +39,27 @@ function Header({ device }) {
   const [contextBarVisibility, setContextBarVisibility] = useState(false);
   const [discardChangesDialogVisibility, setDiscardChangesDialogVisibility] =
     useState(false);
+  const [quitting, setQuitting] = useState(false);
 
   const { t } = useTranslation();
+
+  useEffect(() => {
+    const should_quit = () => {
+      if (contextBarVisibility) {
+        ipcRenderer.invoke("app.stop-quit");
+        setDiscardChangesDialogVisibility(true);
+        setQuitting(true);
+      } else {
+        ipcRenderer.invoke("app.confirm-quit");
+      }
+    };
+
+    ipcRenderer.on("app.quit-requested", should_quit);
+
+    return function cleanup() {
+      ipcRenderer.removeListener("app.quit-requested", should_quit);
+    };
+  });
 
   useEffect(() => {
     const context_bar_channel = new BroadcastChannel("context_bar");
@@ -91,6 +111,10 @@ function Header({ device }) {
     setDiscardChangesDialogVisibility(false);
     contextBarChangesDiscarded();
     setContextBarVisibility(false);
+
+    if (quitting) {
+      ipcRenderer.invoke("app.confirm-quit");
+    }
   };
 
   return (
