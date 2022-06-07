@@ -14,8 +14,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import { app, ipcMain, BrowserWindow } from "electron";
+import { app, ipcMain } from "electron";
 import { removeUsbEventListeners } from "./ipc_device_discovery";
+import { sendToRenderer } from "./utils";
 
 export const registerExitHandlers = () => {
   let readyToQuit = false;
@@ -71,9 +72,7 @@ export const registerExitHandlers = () => {
     }, 1000);
 
     // Before we quit, ask the renderer if we're ready.
-    BrowserWindow.getAllWindows().forEach((win) => {
-      win.webContents.send("app.quit-requested");
-    });
+    sendToRenderer("app.quit-requested");
 
     e.preventDefault();
   });
